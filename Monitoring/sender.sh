@@ -1,5 +1,6 @@
 #!/bin/sh
 
+MONITOR_ES_ENDPOINTS=${MONITOR_ES_ENDPOINTS:-varnish.atlas-ml.org:80}
 
 if [ -n $MONITOR_ES ]
 then
@@ -17,9 +18,11 @@ data=$(varnishstat -j)
 
 jsn=$(echo $data | jq --arg INST "$INSTANCE" --arg SITE "$SITE" '. += { instance: $INST, site: $SITE }')
 
-timeout 2 curl --request POST -L -k \
-  --url http://varnish.atlas-ml.org:80/ \
-  --header 'content-type: application/json' \
-  --data "$jsn"
+for endpoint in $MONITOR_ES_ENDPOINTS; do
+  timeout 2 curl --request POST -L -k \
+    --url http://${endpoint}/ \
+    --header 'content-type: application/json' \
+    --data "$jsn"
+done
 
 exit 0
